@@ -1,0 +1,41 @@
+// A launch configuration that compiles the extension and then opens it inside a new window
+// Use IntelliSense to learn about possible attributes.
+// Hover to view descriptions of existing attributes.
+// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
+      "name": "Launch Extension",
+      "outFiles": ["${workspaceFolder}/out/**/*.js"],
+      // "preLaunchTask": "npm",
+      "request": "launch",
+      "type": "extensionHost"
+    },
+    {
+      "name": "Extension",
+      "type": "pwa-extensionHost",
+      "request": "launch",
+      "runtimeExecutable": "${execPath}",
+      "debugWebviews": true,
+      "rendererDebugOptions": {
+        "sourceMapPathOverrides": {
+          "webpack://?:*/../*": "${workspaceFolder}/packages/*",
+          "webpack://vscode-js-profile-table/./*": "${workspaceFolder}/packages/vscode-js-profile-table/*",
+          "webpack://vscode-js-profile-flame/./*": "${workspaceFolder}/packages/vscode-js-profile-flame/*"
+        }
+      },
+      "sourceMapPathOverrides": {
+        "webpack://?:*/../*": "${workspaceFolder}/packages/*",
+        "webpack://vscode-js-profile-table/./*": "${workspaceFolder}/packages/vscode-js-profile-table/*",
+        "webpack://vscode-js-profile-flame/./*": "${workspaceFolder}/packages/vscode-js-profile-flame/*"
+      },
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}/packages/vscode-js-profile-table",
+        "--extensionDevelopmentPath=${workspaceFolder}/packages/vscode-js-profile-flame",
+        "--extensionDevelopmentPath=${workspaceFolder}/../vscode-js-debug/out"
+      ]
+    }
+  ]
+}

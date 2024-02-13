@@ -1,0 +1,156 @@
+{
+    "name": "vscode-python-kernel-resource-monitor",
+    "displayName": "Python Kernel Resource Monitor",
+    "version": "1.0.0",
+    "description": "Monitor the CPU & Memory usage of Python Kernels",
+    "author": {
+        "name": "Don Jayamanne"
+    },
+    "homepage": "https://github.com/donjayamanne/vscode-python-kernel-resource-monitor#readme",
+    "license": "MIT",
+    "main": "out/extension.js",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/donjayamanne/vscode-python-kernel-resource-monitor.git"
+    },
+    "bugs": {
+        "url": "https://github.com/donjayamanne/vscode-python-kernel-resource-monitor/issues"
+    },
+    "extensionKind": [
+        "workspace"
+    ],
+    "keywords": [
+        "jupyter",
+        "notebook",
+        "python",
+        "interactive",
+        "performance"
+    ],
+    "categories": [
+        "Data Science",
+        "Machine Learning",
+        "Notebooks",
+        "Visualization"
+    ],
+    "activationEvents": [
+        "onNotebook:jupyter-notebook",
+        "onNotebook:interactive"
+    ],
+    "capabilities": {
+        "virtualWorkspaces": false,
+        "untrustedWorkspaces": {
+            "supported": false
+        }
+    },
+    "publisher": "donjayamanne",
+    "engines": {
+        "vscode": "^1.86.0"
+    },
+    "scripts": {
+        "pack": "vsce package",
+        "compile": "rimraf out && webpack --mode production",
+        "compile-": "npm run compile:webpack && npm run compile:tsc",
+        "compile:webpack": "webpack",
+        "compile:tsc": "tsc -p ./",
+        "watch": "npm run watch:webpack",
+        "watchx": "concurrently npm:watch:webpack npm:watch:tsc",
+        "watch:webpack": "webpack --mode development --watch",
+        "watch:tsc": "tsc -watch -p ./",
+        "format": "prettier --write *.js  **/*.js *.json **/*.ts **/*.yml"
+    },
+    "icon": "resources/logo.png",
+    "contributes": {
+        "views": {
+            "jupyter": [
+                {
+                    "type": "webview",
+                    "id": "vscode-python-kernel-resource-monitor.realtime",
+                    "name": "Resource Monitor"
+                }
+            ]
+        },
+        "menus": {
+            "view/title": [
+                {
+                    "command": "vscode-python-kernel-resource-monitor.toggle.cpu",
+                    "when": "view == vscode-python-kernel-resource-monitor.realtime",
+                    "group": "navigation@1"
+                },
+                {
+                    "command": "vscode-python-kernel-resource-monitor.toggle.memory",
+                    "when": "view == vscode-python-kernel-resource-monitor.realtime",
+                    "group": "navigation@1"
+                }
+            ],
+            "commandPalette": [
+                {
+                    "command": "vscode-python-kernel-resource-monitor.toggle.cpu",
+                    "when": "vscode-python-kernel-resource-monitor:enabled"
+                },
+                {
+                    "command": "vscode-python-kernel-resource-monitor.toggle.memory",
+                    "when": "vscode-python-kernel-resource-monitor:enabled"
+                }
+            ]
+        },
+        "commands": [
+            {
+                "command": "vscode-python-kernel-resource-monitor.toggle.cpu",
+                "category": "Jupyter",
+                "title": "Toggle Visibility of CPU Charts",
+                "icon": "$(chip)"
+            },
+            {
+                "command": "vscode-python-kernel-resource-monitor.toggle.memory",
+                "category": "Jupyter",
+                "title": "Toggle Visibility of Memory Charts",
+                "icon": "$(file-binary)"
+            }
+        ],
+        "configuration": []
+    },
+    "devDependencies": {
+        "@types/chai": "^4.3.10",
+        "@types/node": "^20.9.0",
+        "@types/node-os-utils": "^1.3.4",
+        "@types/resize-observer-browser": "^0.1.7",
+        "@types/vscode": "^1.84.1",
+        "@typescript-eslint/eslint-plugin": "^6.10.0",
+        "@typescript-eslint/parser": "^6.10.0",
+        "@vscode/jupyter-extension": "^0.0.94",
+        "autoprefixer": "^10.4.16",
+        "chokidar-cli": "^3.0.0",
+        "concurrently": "^8.2.2",
+        "cpy-cli": "^5.0.0",
+        "cross-env": "^7.0.3",
+        "css-loader": "^6.8.1",
+        "cssnano": "^6.0.1",
+        "eslint": "^8.53.0",
+        "eslint-plugin-header": "^3.1.1",
+        "eslint-plugin-react": "^7.33.2",
+        "html-webpack-plugin": "^5.5.3",
+        "os-browserify": "^0.3.0",
+        "path-browserify": "^1.0.1",
+        "postcss-loader": "^7.3.3",
+        "preact": "^10.18.2",
+        "prettier": "^3.0.3",
+        "raw-loader": "^4.0.2",
+        "rimraf": "^5.0.5",
+        "source-map-loader": "^4.0.1",
+        "source-map-support": "^0.5.21",
+        "style-loader": "^3.3.3",
+        "svg-inline-loader": "^0.8.2",
+        "ts-loader": "^9.5.0",
+        "typescript": "^5.2.2",
+        "vitest": "^0.34.6",
+        "vscode-test": "^1.3.0",
+        "webpack": "^5.89.0",
+        "webpack-cli": "^5.1.4",
+        "webpack-dev-server": "^4.15.1"
+    },
+    "dependencies": {
+        "@vscode/codicons": "^0.0.35",
+        "node-os-utils": "^1.3.7",
+        "vscode-webview-tools": "^0.1.1"
+    }
+}
