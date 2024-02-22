@@ -16,5 +16,3 @@ For instance the Memory usage displayed, is the `Real Memory` of the process ins
 
 ### Thanks
 * Code for generating graphs have been borrowed from [Flame Chart Visualizer for JavaScript Profile](https://marketplace.visualstudio.com/items?itemName=ms-vscode.vscode-js-profile-flame).
-* The Jupyter Extension API is used to retrieve key information about the running kernel.
-See here for sample usage https://github.com/microsoft/vscode-extension-samples/tree/main/jupyter-kernel-execution-sample.
