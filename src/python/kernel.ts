@@ -1,7 +1,3 @@
-/*---------------------------------------------------------
- * Copyright (C) Microsoft Corporation. All rights reserved.
- *--------------------------------------------------------*/
-
 import { CancellationToken, NotebookDocument, extensions } from 'vscode';
 import { Jupyter, Kernel } from '@vscode/jupyter-extension';
 
@@ -33,20 +29,25 @@ export type ProcessInfo = {
 
 const mime = 'application/vnd.jupyter.monitoring+json';
 const code = `
-import sys
-import os
-import IPython.display
+def __resource_monitor_get_kernel_process_info():
+    import sys
+    import os
+    import IPython.display
 
 
-display({"${mime}": {"executable": sys.executable, "env": dict(os.environ), "pid": os.getpid()}}, raw=True)
+    display({"${mime}": {"executable": sys.executable, "env": dict(os.environ), "pid": os.getpid()}}, raw=True)
+
+
+__resource_monitor_get_kernel_process_info()
+del __resource_monitor_get_kernel_process_info    
 `;
 export async function getKernelProcessInfo(kernel: Kernel, token: CancellationToken) {
     for await (const output of kernel.executeCode(code, token)) {
         const infoItem = output.items.find((i) => i.mime === mime);
-        if (!infoItem) {
-            continue;
+        if (infoItem) {
+            return JSON.parse(new TextDecoder().decode(infoItem.data)) as ProcessInfo;
         }
-        return JSON.parse(new TextDecoder().decode(infoItem.data)) as ProcessInfo;
+        continue;
     }
     return;
 }

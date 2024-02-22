@@ -1,7 +1,3 @@
-/*---------------------------------------------------------
- * Copyright (C) Microsoft Corporation. All rights reserved.
- *--------------------------------------------------------*/
-
 import * as vscode from 'vscode';
 import { logger } from './logging';
 import {
@@ -39,6 +35,7 @@ const showMemory = 'showMemory';
 export class RealtimeNotebookKernelMonitor {
     private settings = readRealtimeSettings(this.context);
     private webviews = new Set<vscode.WebviewView>();
+    private disposables: vscode.Disposable[] = [];
 
     /**
      * Returns any realtime metric webviews that are currently visible.
@@ -51,6 +48,9 @@ export class RealtimeNotebookKernelMonitor {
         this.sendSystemCPUDataEverySecond();
     }
 
+    dispose() {
+        this.disposables.forEach((d) => d.dispose());
+    }
     /**
      * Updates the metrics enabled in the displayed chart.
      */
@@ -76,20 +76,22 @@ export class RealtimeNotebookKernelMonitor {
     public trackWebview(webview: vscode.WebviewView) {
         this.webviews.add(webview);
 
-        webview.onDidChangeVisibility(() => {
-            if (webview.visible) {
-                this.hydrate(webview.webview);
-            } else {
-                // Shut down all the perf monitors, leave it running only when active.
-                vscode.workspace.notebookDocuments.forEach((n) => this.stopTracking(n));
-            }
-        });
+        this.disposables.push(
+            webview.onDidChangeVisibility(() => {
+                if (webview.visible) {
+                    this.hydrate();
+                } else {
+                    // Shut down all the perf monitors, leave it running only when active.
+                    vscode.workspace.notebookDocuments.forEach((n) => this.stopTracking(n));
+                }
+            }),
 
-        webview.onDidDispose(() => {
-            this.webviews.delete(webview);
-        });
+            webview.onDidDispose(() => {
+                this.webviews.delete(webview);
+            })
+        );
 
-        this.hydrate(webview.webview);
+        this.hydrate();
     }
 
     public stopTracking(notebook: vscode.NotebookDocument) {
@@ -114,7 +116,7 @@ export class RealtimeNotebookKernelMonitor {
         this.broadcast({ type: MessageType.UpdateSettings, settings: this.settings });
     }
     private updateSettingsIfMonitoringANewNotebook(monitor: PerformanceMonitor) {
-        if (monitor.status !== 'started') {
+        if (monitor.status !== 'started' || !monitor.notebook) {
             return;
         }
         const notebookPath = monitor.notebook.uri.fsPath;
@@ -133,7 +135,7 @@ export class RealtimeNotebookKernelMonitor {
             return;
         }
         this.monitoredItems.add(monitor);
-        this.context.subscriptions.push(
+        this.disposables.push(
             monitor.onPerfData((e) => {
                 this.updateSettingsIfMonitoringANewNotebook(monitor);
                 this.dataToSend.push(e.data);
@@ -147,7 +149,15 @@ export class RealtimeNotebookKernelMonitor {
             const data = this.dataToSend;
             this.dataToSend = [];
             const delayTime = isAnyNotebookBeingMonitored() ? 1000 : 0;
-            if (data.length === 0 && Date.now() - lastSeenTime > delayTime) {
+            const timeAccurateToSeconds = Math.floor(Date.now() / 1000) * 1000;
+            const shouldSendDummyData = data.length === 0 && timeAccurateToSeconds - lastSeenTime >= delayTime;
+            if (!shouldSendDummyData) {
+                lastSeenTime = timeAccurateToSeconds;
+            }
+            if (!shouldSendDummyData && data.length === 0) {
+                return;
+            }
+            if (shouldSendDummyData) {
                 // Lets not have an idle chart, display something every 5s.
                 const hostInfo = getHostCpuMemoryInfo();
                 const metrics: IDAMetrics = {
@@ -163,8 +173,6 @@ export class RealtimeNotebookKernelMonitor {
                     }
                 };
                 data.push(metrics);
-            } else {
-                lastSeenTime = Date.now();
             }
             // If there are notebooks we were monitoring,
             // and we haven't got the data, then fill in with the old values.
@@ -192,9 +200,12 @@ export class RealtimeNotebookKernelMonitor {
                 });
                 data.push(...metrics);
             }
+            if (!data.length) {
+                return;
+            }
             this.broadcast({ type: MessageType.BatchAddData, data: data });
-        }, 1000);
-        this.context.subscriptions.push({ dispose: () => clearInterval(interval) });
+        }, 1_000);
+        this.disposables.push({ dispose: () => clearInterval(interval) });
     }
     public async startTracking(notebook: vscode.NotebookDocument) {
         // If we haven't opened the webview, then no point monitoring any notebooks.
@@ -221,7 +232,7 @@ export class RealtimeNotebookKernelMonitor {
         }
     }
 
-    private hydrate(_webview: vscode.Webview) {
+    private hydrate() {
         vscode.workspace.notebookDocuments.forEach((n) => this.stopTracking(n));
         this.updateSettings();
     }

@@ -98,6 +98,8 @@ export abstract class Metric {
      */
     public setData(data: { value: number; time: number }[]) {
         this.innerMetrics = data;
+        this.valuesAtTime.clear();
+        data.forEach(({ time, value }) => this.valuesAtTime.set(time, value));
         this.index = data.length;
         this.maxMetric = this.recalcMax();
     }
@@ -127,17 +129,27 @@ export abstract class Metric {
      */
     protected push(timestamp: number, metric: number) {
         if (this.innerMetrics.length === this.width) {
-            if (this.innerMetrics.shift()?.value === this.maxMetric && metric < this.maxMetric) {
+            const removedItem = this.innerMetrics.shift();
+            if (removedItem) {
+                this.valuesAtTime.delete(removedItem?.time);
+            }
+            if (removedItem?.value === this.maxMetric && metric < this.maxMetric) {
                 this.maxMetric = this.recalcMax();
             }
         }
 
         this.maxMetric = Math.max(this.maxMetric, metric);
-        this.innerMetrics.push({ value: metric, time: timestamp });
+        if (this.valuesAtTime.has(timestamp)) {
+            const indexOfTime = this.innerMetrics.findIndex((m) => m.time === timestamp);
+            if (indexOfTime !== -1) {
+                this.innerMetrics[indexOfTime] = { value: metric, time: timestamp };
+            }
+        } else {
+            this.innerMetrics.push({ value: metric, time: timestamp });
+        }
         this.valuesAtTime.set(timestamp, metric);
         this.index++;
     }
-
     protected recalcMax() {
         let max = 1;
         for (const metric of this.innerMetrics) {

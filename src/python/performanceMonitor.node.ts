@@ -1,7 +1,3 @@
-/*---------------------------------------------------------
- * Copyright (C) Microsoft Corporation. All rights reserved.
- *--------------------------------------------------------*/
-
 import { ChildProcess, spawn } from 'child_process';
 import * as nodeOSUtils from 'node-os-utils';
 import * as os from 'os';
@@ -89,10 +85,15 @@ export class PerformanceMonitor {
         return this._status;
     }
     private disposables: Disposable[] = [];
+    public get notebook(): NotebookDocument | undefined {
+        return this._notebook.deref();
+    }
+    private readonly _notebook: WeakRef<NotebookDocument>;
     constructor(
-        public readonly notebook: NotebookDocument,
+        notebook: NotebookDocument,
         private readonly pythonFile: string
     ) {
+        this._notebook = new WeakRef(notebook);
         workspace.onDidChangeNotebookDocument(
             (e) => {
                 if (e.notebook !== this.notebook) {
@@ -117,7 +118,11 @@ export class PerformanceMonitor {
         if (this.status === 'started') {
             return;
         }
-        const kernel = await getPythonKernel(this.notebook);
+        const notebook = this.notebook;
+        if (!notebook) {
+            return;
+        }
+        const kernel = await getPythonKernel(notebook);
         if (!kernel) {
             return;
         }
@@ -131,14 +136,22 @@ export class PerformanceMonitor {
         this._status = 'starting';
         const token = new CancellationTokenSource();
         const processInfo = await getKernelProcessInfo(kernel, token.token);
-        if (!processInfo || this.pid === processInfo.pid) {
+        if (!processInfo) {
+            this._status = 'stopped';
             return;
         }
-
+        if (this.pid === processInfo.pid) {
+            return;
+        }
+        this.pid = processInfo.pid;
         this.proc = spawn(processInfo.executable, [this.pythonFile], { env: processInfo.env });
         let output = '';
         this.proc.stdout?.on('data', (data) => {
             output += data.toString();
+            const notebook = this.notebook;
+            if (!notebook) {
+                return;
+            }
             if (output.includes(separator)) {
                 output
                     .split(separator)
@@ -158,7 +171,7 @@ export class PerformanceMonitor {
                         const kernelCpu = (this.lastCpuPercent = (data.kernel_cpu || 0) / 100);
                         const kernelMemory = (this.lastMemory = data.kernel_memory);
                         const metrics: IDAMetrics = {
-                            notebook: this.notebook.uri.fsPath,
+                            notebook: notebook.uri.fsPath,
                             // Send data accurate to the second.
                             timestamp: Math.floor(Date.now() / 1000) * 1000,
                             cpu: { system: hostInfo.cpuPercent / 100, kernel: kernelCpu },
@@ -172,14 +185,13 @@ export class PerformanceMonitor {
                         if (this.data.length > 60) {
                             this.data.shift();
                         }
-                        this._onPerfData.fire({ notebook: this.notebook, data: metrics });
+                        this._onPerfData.fire({ notebook, data: metrics });
                     });
             }
             output = output.substring(output.lastIndexOf(separator) + separator.length);
         });
         this.proc.stderr?.on('data', (data) => logger.error(`Error from performance monitor: ${data.toString()}`));
-        const pid = (this.pid = processInfo.pid);
-        this.proc.stdin?.write(`${JSON.stringify({ pid })}${os.EOL}`);
+        this.proc.stdin?.write(`${JSON.stringify({ pid: processInfo.pid })}${os.EOL}`);
         this._status = 'started';
     }
 

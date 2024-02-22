@@ -49,7 +49,6 @@
     "scripts": {
         "pack": "vsce package",
         "compile": "rimraf out && webpack --mode production",
-        "compile-": "npm run compile:webpack && npm run compile:tsc",
         "compile:webpack": "webpack",
         "compile:tsc": "tsc -p ./",
         "watch": "npm run watch:webpack",
@@ -116,7 +115,7 @@
         "@types/vscode": "^1.84.1",
         "@typescript-eslint/eslint-plugin": "^6.10.0",
         "@typescript-eslint/parser": "^6.10.0",
-        "@vscode/jupyter-extension": "^0.0.94",
+        "@vscode/jupyter-extension": "^1.1.1",
         "autoprefixer": "^10.4.16",
         "cpy-cli": "^5.0.0",
         "cross-env": "^7.0.3",
