@@ -32,8 +32,8 @@ export class Settings {
     public allMetrics: (HostCpuMetric | KernelCpuMetric | KernelMemoryMetric)[] = createMetrics();
 
     public get enabledMetrics() {
-        const enabledMetrics = new Set(this.value.enabledMetrics.map((m) => `${m.type}:${m.notebook}`));
-        return this.allMetrics.filter((m) => enabledMetrics.has(`${m.type}:${m.notebook}`));
+        const enabledMetrics = new Set(this.value.enabledMetrics.map((m) => `${m.type}<>${m.notebook}`));
+        return this.allMetrics.filter((m) => enabledMetrics.has(`${m.type}<>${m.notebook}`));
     }
     public steps = 0;
 
@@ -97,11 +97,11 @@ export class Settings {
 
     public update(newValue: ISettings) {
         this.value = newValue;
-        const allMetricsToCreate = new Set(this.value.enabledMetrics.map((m) => `${m.type}:${m.notebook}`));
-        const allCreatedMetrics = this.allMetrics.map((m) => `${m.type}:${m.notebook}`);
+        const allMetricsToCreate = new Set(this.value.enabledMetrics.map((m) => `${m.type}<>${m.notebook}`));
+        const allCreatedMetrics = this.allMetrics.map((m) => `${m.type}<>${m.notebook}`);
         allMetricsToCreate.forEach((m) => {
             if (!allCreatedMetrics.includes(m)) {
-                const [type, notebook] = m.split(':');
+                const [type, notebook] = m.split('<>');
                 const metric =
                     type === 'cpu' ? new KernelCpuMetric('cpu', notebook) : new KernelMemoryMetric('memory', notebook);
                 metric.reset(this.value.viewDuration, this.value.pollInterval);
